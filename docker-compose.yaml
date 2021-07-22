@@ -1,0 +1,79 @@
+# 指定docker-compose.yaml的版本
+# docker19.03+支持3.8
+# 兼容性:https://docs.docker.com/compose/compose-file/
+version: "3.8"
+
+services:
+    # 自定义服务名字
+    dev:
+        # 构建镜像: 从Dockerfile构建镜像, build指令
+        build:
+            # 指定构建镜像时的上下文目录位置
+            context: .
+
+            # 指定构建文件位置, 类似docker build -f path
+            dockerfile: Dockerfile
+
+            # 覆盖Dockerfile文件中的已有得ARG的初始值, 类似docker build --build-arg exist_key=new_value
+            # args:
+            #     - passwd=bluelinux
+
+            labels:
+                - "dev.description=cpp develop environment"
+                - "dev.maintainer=Benny hzcedu@gmail.com"
+                - "dev.license=MIT"
+            # 执行RUN命令时, 网络模式.
+            network: host
+
+            # 构建时, 完成的镜像的阶段(针对Dockerfile是多阶构建的情况)
+            # target: builder
+                
+        # 创建容器的名字
+        container_name: bug_free
+
+        # # 容器的网络模式, 与ports不兼容, 只能二选一.
+        # network_mode: "host"
+
+        # 指定镜像名字和tag: 如果没有buiid就采用本地现成镜像或者从dockerhub拉取, image指令. format: image: image-name:tag
+        image: cpp-dev:1.0
+
+        # 挂载本地目录到容器目录 [host path]:[container path]
+        volumes:
+            - ./project:/home/ubuntu/workspace
+
+        # 映射容器端口到本地端口 [host]:[container]
+        # container必填, host若无则自动选择一个短暂的host端口
+        # 无addr,表示0.0.0.0,所有addr均可
+        # format1: container_port, - "3000"
+        # format2: host_port:container_port, - "80:80"
+        # format3: host_addr::host_port:container_port, - "127.0.0.1::80:80"
+        # - "3000"
+        # - "3000-3005"
+        # - "8000:8000"
+        # - "9090-9091:8080-8081"
+        # - "49100:22"
+        # - "127.0.0.1:8001:8001"
+        # - "127.0.0.1:5000-5010:5000-5010"
+        # - "127.0.0.1::5000"
+        # - "6060:6060/udp"
+        # - "12400-12500:1240"
+        ports:
+            - "127.0.0.1:5858:22"
+        
+        # 修改安全模式, 以支持gdbserver
+        security_opt:
+            - seccomp:unconfined
+            - apparmor:unconfined
+
+        # gdb调试需要ptrace, 容器要开启相关的内核支持
+        cap_add: 
+            - SYS_PTRACE
+        
+        # 相当于docker run -t
+        tty: true
+
+        # 开启ssh
+        command:
+            bash -c "sudo service ssh restart && tail -f /dev/null"
+
+
